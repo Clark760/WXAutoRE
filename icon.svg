@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="20" fill="#f3ead8"/>
+  <polygon points="64,10 110,37 110,91 64,118 18,91 18,37" fill="none" stroke="#2b2622" stroke-width="7"/>
+  <polygon points="64,30 92,46 92,82 64,98 36,82 36,46" fill="#a8322d"/>
+  <text x="64" y="78" font-size="40" text-anchor="middle" fill="#f3ead8" font-family="KaiTi, STKaiti, serif" font-weight="bold">武</text>
+</svg>

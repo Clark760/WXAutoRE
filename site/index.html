@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>武侠自走棋 · 成就录</title>
+  <meta name="description" content="WXAutoRE 武侠自走棋重铸计划的里程碑与成就记录。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero" id="top">
+    <canvas id="battle-canvas" aria-hidden="true"></canvas>
+    <div class="mountains" aria-hidden="true">
+      <div class="ridge ridge-far"></div>
+      <div class="ridge ridge-mid"></div>
+      <div class="ridge ridge-near"></div>
+    </div>
+    <div class="hero-inner">
+      <p class="eyebrow">WXAutoRE · 重铸计划</p>
+      <h1 class="brush-title"><span>武侠自走棋</span></h1>
+      <p class="hero-sub">五十人守关，两百人叩门 · 塔防式自走棋 · 数据驱动 · 可 Mod</p>
+      <nav class="hero-links" aria-label="快捷入口">
+        <a class="btn btn-primary" href="#timeline">看成就录</a>
+        <a class="btn" id="link-repo" href="#">GitHub 仓库</a>
+        <a class="btn" id="link-releases" href="#">发布页面</a>
+      </nav>
+    </div>
+    <div class="seal" aria-hidden="true"><span>成就</span><span>录</span></div>
+    <a class="scroll-hint" href="#stats" aria-label="向下滚动">
+      <span></span>
+    </a>
+  </header>
+
+  <main>
+    <section class="stats" id="stats" aria-label="项目数字"></section>
+
+    <section class="section" id="road">
+      <h2 class="section-title"><span>里程碑</span></h2>
+      <p class="section-sub">每一步都要"能演示、指标过线、亲自看过"才算完成。</p>
+      <div class="road reveal">
+        <div class="road-track"><div class="road-fill" id="road-fill"></div></div>
+        <ol class="road-list" id="road-list"></ol>
+      </div>
+    </section>
+
+    <section class="section" id="redlines">
+      <h2 class="section-title"><span>三条红线</span></h2>
+      <p class="section-sub">旧项目做不下去的三个直接原因。每一条都有能自动测的验收指标。</p>
+      <div class="redline-grid" id="redline-list"></div>
+    </section>
+
+    <section class="section" id="timeline">
+      <h2 class="section-title"><span>成就录</span></h2>
+      <p class="section-sub">最新的在最上面。</p>
+      <ol class="timeline" id="timeline-list"></ol>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>
+      <a id="footer-repo" href="#">仓库</a> ·
+      <a id="footer-releases" href="#">发布页面</a> ·
+      <a href="#top">回到顶部</a>
+    </p>
+    <p class="footer-note">页面数据来自 <code>site/data/achievements.js</code>，每完成一个里程碑追加一条。</p>
+  </footer>
+
+  <script src="data/achievements.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

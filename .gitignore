@@ -1,0 +1,8 @@
+# Godot
+.godot/
+/android/
+*.tmp
+
+# 本地工具
+.claude/
+.vscode/
