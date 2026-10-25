@@ -16,14 +16,14 @@ window.WXAUTO_DATA = {
 
   stats: [
     { label: "里程碑完成", value: 0, suffix: " / 5" },
+    { label: "50v200 逻辑帧", value: 0.94, decimals: 2, suffix: " ms", note: "旧项目 49.6ms · 目标 ≤4ms" },
+    { label: "自动化测试", value: 26, suffix: " 个" },
     { label: "已定决策", value: 29, suffix: " 条" },
-    { label: "设计文档", value: 2, suffix: " 份" },
-    { label: "旧项目逻辑帧", value: 49.6, decimals: 1, suffix: " ms", note: "目标 ≤4ms" },
   ],
 
   milestones: [
-    { id: "M0", name: "战斗核心", goal: "坐标、地图、数组化战斗、距离场、敌我 AI、城门、压测", status: "doing" },
-    { id: "M1", name: "数据与 Mod", goal: "类型化数据、Mod 加载与校验、注册表", status: "todo" },
+    { id: "M0", name: "战斗核心", goal: "坐标、地图、数组化战斗、距离场、敌我 AI、城门、压测", status: "done" },
+    { id: "M1", name: "数据与 Mod", goal: "类型化数据、Mod 加载与校验、注册表", status: "doing" },
     { id: "M2", name: "功法与 Buff", goal: "触发器、选择器、效果、状态媒介与连携", status: "todo" },
     { id: "M3", name: "局内循环", goal: "卡池、商店、布阵、六关与参考解", status: "todo" },
     { id: "M4", name: "操作与可读性", goal: "框选分组、驻守追击、战报与画中画", status: "todo" },
@@ -35,14 +35,14 @@ window.WXAUTO_DATA = {
       glyph: "滞",
       old: "250 单位时逻辑帧均值 49.6ms、峰值 159ms",
       target: "50v200：均值 ≤4ms · p99 ≤8ms · 最大 ≤12ms",
-      now: "M0 压测后更新",
+      now: "M0 达标：均值 0.94ms · p99 1.79ms · 最大 2.16ms；窗口模式 p95 7.1ms",
     },
     {
       name: "索敌失效",
       glyph: "盲",
       old: "大部分角色拿不到目标，在后排干等；58% 的移动被堵",
       target: "我方闲置率 ≤10% · 远程 1 秒内开火 ≥95% · 驻守不越界",
-      now: "M0 压测后更新",
+      now: "M0 达标：我方闲置率 0% · 远程 1 秒内开火 100% · 越界 0 · 无死锁",
     },
     {
       name: "功法乱放",
@@ -90,6 +90,29 @@ window.WXAUTO_DATA = {
       links: [
         { text: "设计文档", href: REPO + "/blob/main/doc/02-最小可玩设计.md" },
         { text: "提交 1dc98ac", href: REPO + "/commit/1dc98ac" },
+      ],
+    },
+    {
+      date: "2026-10-25",
+      tag: "M0 · 战斗核心",
+      title: "五十人守关，两百人叩门：战斗核心跑通",
+      summary: "数组化的战斗模拟、三种距离场、敌我 AI 和城门判定全部完成。50v200 逻辑帧均值 0.94ms，比旧项目快 50 倍。",
+      highlights: [
+        "逻辑里只有一个距离函数、一个射程判定，偏移坐标只在地图解析里出现一次——旧项目的索敌 bug 从根上消失",
+        "50v200 逻辑帧均值 0.94ms、最大 2.16ms；300 单位也只要 1.2ms",
+        "窗口模式约 150 FPS，全线接敌前后单帧最大 11.9ms",
+        "驻守 AI：远程优先打离城门最近的敌人；我方闲置率 0%，防区越界 0 次",
+        "压测抓到并修掉一个死锁：弓手停在墙后一直射，改成「走得到才停下射击」",
+        "26 个自动化测试 + 一键检查脚本；同一种子跑三次，结果哈希完全一致",
+      ],
+      metrics: [
+        { label: "50v200 逻辑帧均值", before: 49.6, after: 0.94, target: 4, unit: "ms" },
+        { label: "50v200 逻辑帧峰值", before: 158.8, after: 2.16, target: 12, unit: "ms" },
+        { label: "每个单位每帧的逻辑开销", before: 190, after: 3.8, target: 16, unit: "µs" },
+      ],
+      links: [
+        { text: "设计文档 v0.4", href: REPO + "/blob/main/doc/02-最小可玩设计.md" },
+        { text: "提交 2db6827", href: REPO + "/commit/2db6827" },
       ],
     },
   ],
