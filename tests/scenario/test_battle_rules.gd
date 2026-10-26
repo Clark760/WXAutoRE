@@ -65,11 +65,12 @@ func test_ally_cannot_be_placed_on_gate() -> void:
 	check_eq(sim.st.occupant[sim.map.gate_cells[0]], -1, "城门格是空的")
 
 
-## 驻守单位迎敌不出防区，敌人死了以后回到部署格。
+## 驻守模式：迎敌不出防区，敌人死了以后回到部署格。
 func test_guard_stays_in_zone_and_returns_home() -> void:
 	var sim := _sim(_open_rows(), 3)
 	var home: int = _at(sim, 3, 10)
 	var a: int = sim.add_unit(_def("wuseng", {"atk": 400.0}), BattleState.TEAM_ALLY, home)
+	sim.st.mode[a] = BattleState.MODE_GUARD
 	# 弱小的敌人出现在防区边上（3 格），站着不动
 	var e: int = sim.add_unit(_def("bandit", {"hp": 30.0}), BattleState.TEAM_ENEMY, _at(sim, 3, 7))
 	sim.st.move_cd[e] = 1000.0
@@ -116,6 +117,7 @@ func test_suicider_ignores_attacks_but_normal_enemy_reacts() -> void:
 		var a: int = sim.add_unit(_def("tangmen", {"atk": 1.0, "hp": 99999.0, "attack_range": 6}),
 				BattleState.TEAM_ALLY, _at(sim, 12, 10))
 		sim.st.guard_radius[a] = 0
+		sim.st.mode[a] = BattleState.MODE_GUARD
 		var key: String = "scout" if suicider else "bandit"
 		var e: int = sim.add_unit(_def(key, {"hp": 99999.0, "alert_radius": 0}), BattleState.TEAM_ENEMY, _at(sim, 10, 4))
 		sim.end_on_breach = false
@@ -139,6 +141,8 @@ func test_blocked_suicider_attacks_blocker() -> void:
 	var rows := PackedStringArray(["##E##", "##.##", "##.##", "##A##", "##G##"])
 	var sim := _sim(rows, 2)
 	var a: int = sim.add_unit(_def("wuseng", {"atk": 1.0}), BattleState.TEAM_ALLY, _at(sim, 2, 3))
+	sim.st.mode[a] = BattleState.MODE_GUARD
+	sim.st.guard_radius[a] = 0
 	var s: int = sim.add_unit(_def("scout"), BattleState.TEAM_ENEMY, _at(sim, 2, 0))
 	sim.start()
 	_run(sim, 40)
@@ -154,6 +158,7 @@ func test_normal_enemy_engages_within_alert_radius() -> void:
 		var sim := _sim(_open_rows(), 2)
 		var a: int = sim.add_unit(_def("wuseng", {"atk": 1.0, "hp": 99999.0}), BattleState.TEAM_ALLY, _at(sim, 1, 7))
 		sim.st.guard_radius[a] = 0
+		sim.st.mode[a] = BattleState.MODE_GUARD
 		var e: int = sim.add_unit(_def("bandit", {"hp": 99999.0}), BattleState.TEAM_ENEMY, _at(sim, 3, 8))
 		sim.st.alert_radius[e] = alert
 		sim.end_on_breach = false
@@ -188,6 +193,56 @@ func test_ranged_enemy_does_not_camp_behind_wall() -> void:
 	_run(sim, 60)
 	check_eq(sim.breach_count, 1, "弓手没有停在墙后，一路走到了城门")
 	check_eq(sim.st.hp[a], sim.st.hp_max[a], "墙另一边的我方单位没挨打")
+
+
+## 迎击：本路没有敌人时，穿过窄口去支援另一路。
+func test_intercept_supports_other_lane() -> void:
+	var rows := PackedStringArray([
+		"EEEEEEE#EEEEEEE",
+		".......#.......",
+		".......#.......",
+		".......#.......",
+		"...............",
+		"...............",
+		".......#.......",
+		".......#.......",
+		".......#.......",
+		".......#.......",
+		"AAAAAAA#AAAAAAA",
+		"##GGG####GGG###",
+	])
+	var sim := _sim(rows, 2)
+	var a: int = sim.add_unit(_def("wuseng", {"atk": 400.0, "move_interval": 0.3}), BattleState.TEAM_ALLY, _at(sim, 3, 10))
+	var e: int = sim.add_unit(_def("bandit", {"move_interval": 3.0}), BattleState.TEAM_ENEMY, _at(sim, 11, 1))
+	sim.end_on_breach = false
+	sim.start()
+	var max_col: int = 0
+	for k in 200:
+		if not sim.is_running():
+			break
+		sim.tick()
+		max_col = maxi(max_col, sim.st.cell[a] % sim.map.width)
+	check(max_col > 7, "穿过窄口进入了右边那一路（最远到第 %d 列）" % (max_col + 1))
+	check_eq(sim.st.alive[e], 0, "右路的敌人被消灭")
+	check_eq(sim.breach_count, 0, "没有漏到城门")
+
+
+## 迎击会拦下漏过防线、冲向城门的死士；同样的摆位，驻守（防区 3 格）拦不住。
+func test_intercept_catches_leaker_but_guard_does_not() -> void:
+	for guard in [false, true]:
+		var sim := _sim(_open_rows(), 2)
+		var a: int = sim.add_unit(_def("wuseng", {"atk": 9999.0, "move_interval": 0.3}), BattleState.TEAM_ALLY, _at(sim, 1, 10))
+		if guard:
+			sim.st.mode[a] = BattleState.MODE_GUARD
+		var e: int = sim.add_unit(_def("scout", {"move_interval": 1.0}), BattleState.TEAM_ENEMY, _at(sim, 12, 5))
+		sim.end_on_breach = false
+		sim.start()
+		_run(sim, 150)
+		if guard:
+			check_eq(sim.breach_count, 1, "驻守：死士在防区外，冲到了城门")
+		else:
+			check_eq(sim.st.alive[e], 0, "迎击：死士被拦下消灭")
+			check_eq(sim.breach_count, 0, "迎击：没有漏到城门")
 
 
 func test_dead_unit_frees_its_cell() -> void:

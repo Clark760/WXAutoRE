@@ -5,8 +5,9 @@ extends Node2D
 ## 命令行（godot 参数后加 --）：
 ##   --scenario=B2          开局场景
 ##   --bench                窗口压测：记录帧耗时，战斗结束或 90 秒后打印结果并退出
-##   --screenshot=路径 --shot-at=秒   到指定的战斗时间截图并保存
+##   --screenshot=路径 --shot-at=秒   运行到指定秒数（真实时间）截图并保存
 ##   --overlay              开局就打开调试叠加
+##   --switch=B1@8          运行到第 8 秒（真实时间）切换到 B1，用来检查切换场景后的画面
 
 const TICK: float = BattleSim.TICK
 const MAX_SUBSTEPS: int = 3
@@ -37,6 +38,9 @@ var _screenshot_path: String = ""
 var _shot_at: float = -1.0
 var _shot_done: bool = false
 var _start_overlay: bool = false
+var _elapsed: float = 0.0
+var _switch_to: String = ""
+var _switch_at: float = -1.0
 
 
 func _ready() -> void:
@@ -51,6 +55,10 @@ func _ready() -> void:
 			_shot_at = float(arg.substr(10))
 		elif arg == "--overlay":
 			_start_overlay = true
+		elif arg.begins_with("--switch="):
+			var parts: PackedStringArray = arg.substr(9).split("@")
+			_switch_to = parts[0]
+			_switch_at = float(parts[1]) if parts.size() > 1 else 5.0
 
 	RenderingServer.set_default_clear_color(Color("2b2622"))
 	view = BattleView.new()
@@ -133,11 +141,15 @@ func _process(delta: float) -> void:
 		_bench_frame_tick.append(sim.tick_index)
 		if not sim.is_running() or sim.time >= BENCH_SECONDS:
 			_finish_bench()
-	if _screenshot_path != "" and not _shot_done and sim.time >= _shot_at:
+	_elapsed += delta
+	if _switch_to != "" and _elapsed >= _switch_at:
+		_load(_switch_to)
+		_switch_to = ""
+	if _screenshot_path != "" and not _shot_done and _elapsed >= _shot_at:
 		_shot_done = true
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(_screenshot_path)
-		print("已截图：%s（战斗时间 %.1f 秒）" % [_screenshot_path, sim.time])
+		print("已截图：%s（%s，战斗时间 %.1f 秒）" % [_screenshot_path, scenario, sim.time])
 		if not _bench:
 			get_tree().quit()
 

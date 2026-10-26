@@ -2,7 +2,9 @@ class_name BattleMetrics
 extends RefCounted
 
 ## 压测与验收用的统计（设计文档 10.1）。每个逻辑帧结束后调用 sample()。
-## 闲置：我方——迎战范围内有敌人，却被堵住超过 2 秒；敌方——冲不动也没在交战，超过 2 秒。
+## 闲置：我方——还有要去打的敌人（迎击：全图有走得到的敌人；驻守：防区附近有敌人），
+## 却既没在打、也走不动，超过 2 秒；敌方——冲不动也没在交战，超过 2 秒。
+## 防区越界只统计驻守模式的单位。
 
 const IDLE_SECONDS: float = 2.0
 
@@ -37,7 +39,8 @@ func sample(sim: BattleSim) -> void:
 			ally_unit_ticks += 1
 			if idle:
 				ally_idle_ticks += 1
-			if sim.map.distance(st.home[i], st.cell[i]) > st.guard_radius[i]:
+			if st.mode[i] == BattleState.MODE_GUARD \
+					and sim.map.distance(st.home[i], st.cell[i]) > st.guard_radius[i]:
 				guard_violations += 1
 		else:
 			enemy_unit_ticks += 1

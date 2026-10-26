@@ -15,6 +15,10 @@ const FLAG_HERO: int = 4
 
 enum UnitState { GUARD, MOVING, ATTACKING, BLOCKED, RETURNING, ADVANCING, DEAD }
 
+## 我方行为模式（设计文档 6.5）：迎击 = 主动寻敌、优先拦截离城门近的；驻守 = 只在防区内迎敌。
+const MODE_INTERCEPT: int = 0
+const MODE_GUARD: int = 1
+
 ## 0 = 外功（用 def_ext 减免），1 = 内功（用 def_int 减免）
 const DAMAGE_EXTERNAL: int = 0
 const DAMAGE_INTERNAL: int = 1
@@ -29,6 +33,8 @@ var def_index: PackedInt32Array = PackedInt32Array()
 var alive: PackedByteArray = PackedByteArray()
 var flags: PackedByteArray = PackedByteArray()
 var state: PackedByteArray = PackedByteArray()
+## 我方行为模式，见 MODE_*；敌方不用。
+var mode: PackedByteArray = PackedByteArray()
 var damage_type: PackedByteArray = PackedByteArray()
 
 var cell: PackedInt32Array = PackedInt32Array()
@@ -80,6 +86,7 @@ func setup(p_map: BattleMap, p_capacity: int) -> void:
 	alive.resize(capacity)
 	flags.resize(capacity)
 	state.resize(capacity)
+	mode.resize(capacity)
 	damage_type.resize(capacity)
 	def_index.resize(capacity)
 	cell.resize(capacity)
@@ -147,6 +154,7 @@ func add_unit(d: UnitDef, p_team: int, p_cell: int) -> int:
 		f |= FLAG_HERO
 	flags[i] = f
 	state[i] = UnitState.GUARD if p_team == TEAM_ALLY else UnitState.ADVANCING
+	mode[i] = MODE_INTERCEPT
 	# 普攻用两种攻击里较高的一种
 	if d.atk >= d.iat:
 		damage_type[i] = DAMAGE_EXTERNAL

@@ -6,8 +6,10 @@ extends RefCounted
 
 const TICK: float = 0.1
 const DEADLOCK_SECONDS: float = 300.0
-## 动态距离场只关心附近的情况，超过这个代价就不再展开。
+## 敌方动态场只关心附近的情况，超过这个代价就不再展开。我方迎击场要看全图，不设上限。
 const FIELD_LIMIT: int = 16
+## 我方迎击场里，每个敌人的初始代价 = 它离城门的步数 ÷ 这个数。离城门越近越优先被拦截。
+const THREAT_DIVISOR: int = 2
 
 enum Outcome { RUNNING, WIN, LOSS_BREACH, LOSS_DEADLOCK }
 
@@ -19,7 +21,8 @@ var map: BattleMap
 
 ## 城门场：整局只算一次。敌人沿它冲城门；我方远程用它判断谁离城门最近。
 var gate_field: DistanceField = DistanceField.new()
-## 我方动态场：每格到最近敌人的代价（自己人占着的格子加代价，后排会绕到侧面），我方驻守单位迎敌时沿它移动。
+## 我方迎击场：每格到"最该拦截的敌人"的代价。起点是所有敌人，初始代价按离城门的远近加权；
+## 自己人占着的格子加代价，后排会绕到侧面。我方单位迎敌时沿它移动。
 var ally_field: DistanceField = DistanceField.new()
 ## 敌方动态场：每格到最近我方单位的纯走路距离（不加拥挤代价），敌人交战时沿它移动，
 ## 也用来判断"我方单位是否真的走得到"——隔着墙的不算。
@@ -43,6 +46,7 @@ var breach_unit: int = -1
 var attacks_this_tick: int = 0
 
 var _sources: PackedInt32Array = PackedInt32Array()
+var _source_cost: PackedInt32Array = PackedInt32Array()
 var _started: bool = false
 
 
@@ -55,6 +59,7 @@ func setup(p_map: BattleMap, capacity: int, seed_value: int) -> void:
 	ally_field.setup(map, map.walk_ally)
 	enemy_field.setup(map, map.walk_enemy)
 	_sources.resize(capacity)
+	_source_cost.resize(capacity)
 
 
 func add_unit(d: UnitDef, team: int, cell: int) -> int:
@@ -189,12 +194,15 @@ func _build_dynamic_field(mover_team: int) -> void:
 	var alive: PackedByteArray = st.alive
 	var team: PackedByteArray = st.team
 	var cell: PackedInt32Array = st.cell
+	var gate_dist: PackedInt32Array = gate_field.dist
 	for i in st.unit_count:
 		if alive[i] == 1 and team[i] == source_team:
 			_sources[count] = cell[i]
+			_source_cost[count] = gate_dist[cell[i]] / THREAT_DIVISOR
 			count += 1
 	if mover_team == TEAM_ALLY:
-		ally_field.build(_sources, count, st.occupant, st.team, TEAM_ALLY, FIELD_LIMIT)
+		ally_field.build(_sources, count, st.occupant, st.team, TEAM_ALLY,
+				DistanceField.UNREACHABLE, _source_cost)
 	else:
 		enemy_field.build(_sources, count, st.occupant, st.team, -1, FIELD_LIMIT)
 

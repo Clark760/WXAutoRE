@@ -6,8 +6,8 @@ extends RefCounted
 const NAMES: PackedStringArray = ["B1", "B2", "B3", "B4"]
 
 const DESCRIPTIONS: Dictionary = {
-	"B1": "20v20 · 1 路开阔地 · 全体驻守",
-	"B2": "50v200 · 3 路 + 中央广场（终局地图）· 全体驻守",
+	"B1": "20v20 · 1 路开阔地 · 默认迎击",
+	"B2": "50v200 · 3 路 + 中央广场（终局地图）· 默认迎击",
 	"B3": "50v200 · 2 路 + 窄口 + 死士密集",
 	"B4": "60v240 · 300 单位极限（只记录）",
 }

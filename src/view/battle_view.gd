@@ -37,6 +37,7 @@ var _map_layer: MapLayer
 var _atlas: GlyphAtlas
 var _pixel: PackedVector2Array = PackedVector2Array()
 var _groups: Array[Dictionary] = []
+var _hp_node: MultiMeshInstance2D
 var _hp_mm: MultiMesh
 var _hp_buffer: PackedFloat32Array = PackedFloat32Array()
 
@@ -50,12 +51,14 @@ func _ready() -> void:
 
 
 func bind(p_sim: BattleSim) -> void:
+	# 切换场景时旧的绘制节点要立刻摘掉：queue_free 要到帧末才生效，期间旧血条还会画出来
 	for g in _groups:
-		(g["node"] as Node).queue_free()
+		_discard(g["node"])
 	_groups.clear()
-	if _hp_mm != null:
+	if _hp_node != null:
+		_discard(_hp_node)
+		_hp_node = null
 		_hp_mm = null
-		get_node("HpBars").queue_free()
 	sim = p_sim
 	var map: BattleMap = sim.map
 	_pixel.resize(map.cell_count)
@@ -77,13 +80,18 @@ func bind(p_sim: BattleSim) -> void:
 		buffer.resize(indices.size() * FLOATS_PER_INSTANCE)
 		_groups.append({"def": st.defs[d], "node": node, "indices": indices, "buffer": buffer})
 
-	var hp_node := MultiMeshInstance2D.new()
-	hp_node.name = "HpBars"
+	_hp_node = MultiMeshInstance2D.new()
 	_hp_mm = _make_multimesh(st.unit_count)
-	hp_node.multimesh = _hp_mm
-	add_child(hp_node)
+	_hp_node.multimesh = _hp_mm
+	add_child(_hp_node)
 	_hp_buffer.resize(st.unit_count * FLOATS_PER_INSTANCE)
+	_hp_buffer.fill(0.0)
 	_atlas.build(st.defs)
+
+
+func _discard(node: Node) -> void:
+	remove_child(node)
+	node.queue_free()
 
 
 func map_size() -> Vector2:
