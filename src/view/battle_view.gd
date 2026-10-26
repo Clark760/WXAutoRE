@@ -33,7 +33,7 @@ var overlay: bool = false:
 			_map_layer.overlay = value
 			_map_layer.queue_redraw()
 
-var _map_layer: _MapLayer
+var _map_layer: MapLayer
 var _atlas: GlyphAtlas
 var _pixel: PackedVector2Array = PackedVector2Array()
 var _groups: Array[Dictionary] = []
@@ -42,7 +42,7 @@ var _hp_buffer: PackedFloat32Array = PackedFloat32Array()
 
 
 func _ready() -> void:
-	_map_layer = _MapLayer.new()
+	_map_layer = MapLayer.new()
 	add_child(_map_layer)
 	_atlas = GlyphAtlas.new()
 	add_child(_atlas)
@@ -61,7 +61,7 @@ func bind(p_sim: BattleSim) -> void:
 	_pixel.resize(map.cell_count)
 	for c in map.cell_count:
 		_pixel[c] = map.to_pixel(c, HEX_SIZE)
-	_map_layer.setup(sim, _pixel)
+	_map_layer.setup(sim, _pixel, HEX_SIZE)
 
 	var st: BattleState = sim.st
 	for d in st.defs.size():
@@ -190,51 +190,3 @@ func _make_multimesh(count: int) -> MultiMesh:
 func _apply_textures() -> void:
 	for g in _groups:
 		(g["node"] as MultiMeshInstance2D).texture = _atlas.texture_for(g["def"])
-
-
-class _MapLayer:
-	extends Node2D
-
-	const COLORS: Dictionary = {
-		BattleMap.CellType.FLOOR: Color("ece2cc"),
-		BattleMap.CellType.WALL: Color("3b342c"),
-		BattleMap.CellType.SPAWN: Color("e6cfc4"),
-		BattleMap.CellType.DEPLOY: Color("d6e2cf"),
-		BattleMap.CellType.GATE: Color("a8322d"),
-	}
-
-	var overlay: bool = false
-	var _sim: BattleSim
-	var _pixel: PackedVector2Array
-	var _corners: PackedVector2Array = PackedVector2Array()
-
-	func setup(p_sim: BattleSim, pixel: PackedVector2Array) -> void:
-		_sim = p_sim
-		_pixel = pixel
-		_corners.resize(6)
-		var r: float = BattleView.HEX_SIZE * 0.96
-		for k in 6:
-			var a: float = deg_to_rad(60.0 * k - 30.0)
-			_corners[k] = Vector2(cos(a), sin(a)) * r
-		queue_redraw()
-
-	func _draw() -> void:
-		if _sim == null:
-			return
-		var map: BattleMap = _sim.map
-		var poly := PackedVector2Array()
-		poly.resize(6)
-		for c in map.cell_count:
-			var p: Vector2 = _pixel[c]
-			for k in 6:
-				poly[k] = p + _corners[k]
-			draw_colored_polygon(poly, COLORS[map.cell_type[c]])
-		if not overlay:
-			return
-		# 调试：我方防区
-		var st: BattleState = _sim.st
-		var step: float = BattleView.HEX_SIZE * Hex.SQRT3
-		for i in st.unit_count:
-			if st.alive[i] == 1 and st.team[i] == BattleState.TEAM_ALLY:
-				var radius: float = (st.guard_radius[i] + 0.5) * step
-				draw_arc(_pixel[st.home[i]], radius, 0.0, TAU, 32, Color(0.2, 0.5, 0.9, 0.25), 1.0)
